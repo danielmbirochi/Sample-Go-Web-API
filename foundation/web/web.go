@@ -6,9 +6,24 @@ import (
 	"net/http"
 	"os"
 	"syscall"
+	"time"
 
 	"github.com/dimfeld/httptreemux/v5"
+	"github.com/google/uuid"
 )
+
+// ctxKey represents the type of value for the context key.
+type ctxKey int
+
+// KeyValues is how request metadata (type Values) are stored/retrieved.
+const KeyValues ctxKey = 1
+
+// Values represent metadata attached to requests for debugging purposes.
+type Values struct {
+	TraceID    string
+	Now        time.Time
+	StatusCode int
+}
 
 // Type Handler is an adapter to allow the use of custom method signature as native http.HandlerFunc
 type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
@@ -35,14 +50,17 @@ func NewApp(shutdown chan os.Signal) *App {
 func (a *App) Handle(method string, path string, handler Handler) {
 	h := func(w http.ResponseWriter, r *http.Request) {
 
-		// do some stuff here...
+		// Injects unique identifier & timestamp into request context to be processed
+		v := Values{
+			TraceID: uuid.New().String(),
+			Now:     time.Now(),
+		}
+		ctx := context.WithValue(r.Context(), KeyValues, &v)
 
-		if err := handler(r.Context(), w, r); err != nil {
+		if err := handler(ctx, w, r); err != nil {
 			a.SignalShutdown()
 			return
 		}
-
-		// do some stuff here...
 	}
 
 	a.ContextMux.Handle(method, path, h)
