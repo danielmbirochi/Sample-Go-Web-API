@@ -7,7 +7,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/dimfeld/httptreemux"
+	"github.com/dimfeld/httptreemux/v5"
 )
 
 // Type Handler is an adapter to allow the use of custom method signature as native http.HandlerFunc
