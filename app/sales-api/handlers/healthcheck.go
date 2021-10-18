@@ -1,15 +1,16 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 )
 
-func readiness(w http.ResponseWriter, r *http.Request) {
+func readiness(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	message := struct {
 		Message string
 	}{
 		Message: "Application is running ...",
 	}
-	json.NewEncoder(w).Encode(message)
+	return json.NewEncoder(w).Encode(message)
 }

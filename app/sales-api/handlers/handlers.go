@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dimfeld/httptreemux"
+	"github.com/danielmbirochi/go-sample-service/foundation/web"
 )
 
 // API construct an http.Handler with all application routes defined.
-func API(build string, shutdown chan os.Signal, log *log.Logger) *httptreemux.ContextMux {
-	mux := httptreemux.NewContextMux()
+func API(build string, shutdown chan os.Signal, log *log.Logger) *web.App {
+	app := web.NewApp(shutdown)
 
-	mux.Handle(http.MethodGet, "/healthcheck", readiness)
+	app.Handle(http.MethodGet, "/healthcheck", readiness)
 
-	return mux
+	return app
 }
