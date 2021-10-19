@@ -13,7 +13,11 @@ import (
 func API(build string, shutdown chan os.Signal, log *log.Logger) *web.App {
 	app := web.NewApp(shutdown)
 
-	app.Handle(http.MethodGet, "/healthcheck", readiness)
+	// Register the healthcheck endpoint
+	c := check{
+		build: build,
+	}
+	app.Handle(http.MethodGet, "/v1/healthcheck", c.readiness)
 
 	return app
 }

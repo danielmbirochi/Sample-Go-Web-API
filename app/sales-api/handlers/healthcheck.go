@@ -2,15 +2,26 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
+
+	"github.com/danielmbirochi/go-sample-service/foundation/web"
 )
 
-func readiness(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	message := struct {
-		Message string
+type check struct {
+	build string
+}
+
+func (c check) readiness(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+
+	statusCode := http.StatusOK
+
+	health := struct {
+		Version string `json:"version"`
+		Status  string `json:"status"`
 	}{
-		Message: "Application is running ...",
+		Version: c.build,
+		Status:  "Application is running ...",
 	}
-	return json.NewEncoder(w).Encode(message)
+
+	return web.Respond(ctx, w, health, statusCode)
 }
