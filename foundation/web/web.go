@@ -51,6 +51,7 @@ func NewApp(shutdown chan os.Signal, mw ...Middleware) *App {
 // to abstract requests observability and error handling
 func (a *App) Handle(method string, path string, handler Handler, mw ...Middleware) {
 
+	// handler is the most inner handler to be executed
 	handler = wrapMiddleware(mw, handler)
 
 	handler = wrapMiddleware(a.mw, handler)
@@ -64,6 +65,7 @@ func (a *App) Handle(method string, path string, handler Handler, mw ...Middlewa
 		}
 		ctx := context.WithValue(r.Context(), KeyValues, &v)
 
+		// Starts the execution of the Middleware chain
 		if err := handler(ctx, w, r); err != nil {
 			a.SignalShutdown()
 			return
