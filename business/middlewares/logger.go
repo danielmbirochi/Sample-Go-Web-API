@@ -15,7 +15,7 @@ func Logger(log *log.Logger) web.Middleware {
 	// This is the actual middleware function to be executed.
 	m := func(innerHandler web.Handler) web.Handler {
 
-		// Create the handler that will be attached in the middleware chain (outer handler of the onion)
+		// Creates the request Logger handler that will be attached in the middleware chain (outer handler of the onion)
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 
 			// If the context is missing this value (integrity error), request the service

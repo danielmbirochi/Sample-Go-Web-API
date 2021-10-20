@@ -12,7 +12,7 @@ import (
 
 // API construct an http.Handler with all application routes defined.
 func API(build string, shutdown chan os.Signal, log *log.Logger) *web.App {
-	app := web.NewApp(shutdown, middleware.Logger(log))
+	app := web.NewApp(shutdown, middleware.Logger(log), middleware.Errors(log))
 
 	// Register the healthcheck endpoint
 	c := check{
