@@ -3,6 +3,9 @@ SHELL := /bin/bash
 run:
 	go run app/sales-api/main.go
 
+run-admin:
+	go run app/sales-admin/keygen.go
+
 run-help:
 	go run app/sales-api/main.go -h
 
