@@ -1,20 +1,40 @@
 SHELL := /bin/bash
 
-run:
-	go run app/sales-api/main.go
+# ==============================================================================
+# CLI Help
 
-run-admin:
-	go run app/sales-admin/keygen.go
+admin-help:
+	go run app/sales-admin/main.go
 
 run-help:
 	go run app/sales-api/main.go -h
 
+# ==============================================================================
+# Running locally
+
+run:
+	go run app/sales-api/main.go
+
 build:
 	go build -o app/sales-api/sales-api app/sales-api/main.go
+
+# ==============================================================================
+# Administration
+
+generate-keys:
+	go run app/sales-admin/main.go keygen
+
+
+# ==============================================================================
+# Running local tests
 
 test:
 	go test -v ./... -count=1
 	staticcheck ./...
+
+
+# ==============================================================================
+# Modules support
 
 tidy:
 	go mod tidy
