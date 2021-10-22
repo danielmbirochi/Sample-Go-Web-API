@@ -70,10 +70,18 @@ func run() error {
 			return errors.Wrap(err, "key genereration")
 		}
 
+	case "tokengen":
+		email := cfg.Args.Num(1)
+		privateKeyFile := "/Users/miranda/Documents/estudos/go/go-sample-service/private.pem"
+		algorithm := "RS256"
+		if err := commands.TokenGen(email, privateKeyFile, algorithm); err != nil {
+			return errors.Wrap(err, "generating token")
+		}
+
 	default:
 		fmt.Println("\n\n========================== SUPPORTED FLAGS ==========================")
 		fmt.Println("\n-keygen: generate a set of private/public key files")
-
+		fmt.Println("\n-tokengen: generate a JWT for a user with claims")
 		return nil
 	}
 

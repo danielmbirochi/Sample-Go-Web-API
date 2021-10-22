@@ -24,6 +24,8 @@ build:
 generate-keys:
 	go run app/sales-admin/main.go keygen
 
+generate-token:
+	go run app/sales-admin/main.go tokengen ${EMAIL}
 
 # ==============================================================================
 # Running local tests

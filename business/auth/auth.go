@@ -79,6 +79,12 @@ type Auth struct {
 }
 
 // New creates an *Authenticator.
+//
+// An authenticator maintains the state required to handle JWT processing.
+//
+// It requires a set of keys (Keys) for generating tokens. The algorithms
+// to use (RS256 | HS256), and the key lookup function to perform the job
+// of retrieving a public key for a given KID.
 func New(algorithm string, lookupFunc PublicKeyLookup, keys Keys) (*Auth, error) {
 
 	lookupKey := func(t *jwt.Token) (interface{}, error) {
