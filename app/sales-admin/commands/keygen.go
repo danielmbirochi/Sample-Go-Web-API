@@ -1,5 +1,4 @@
-// This program performs administrative tasks for the sales app.
-package main
+package commands
 
 import (
 	"crypto/rand"
@@ -7,17 +6,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/pkg/errors"
 )
-
-func main() {
-	if err := KeyGen(); err != nil {
-		log.Fatalln(err)
-	}
-}
 
 // KeyGen creates an x509 private/public key for auth tokens.
 func KeyGen() error {
@@ -65,6 +57,6 @@ func KeyGen() error {
 		return errors.Wrap(err, "encoding to public file")
 	}
 
-	fmt.Println("private and public key files generated")
+	fmt.Println("\nPrivate and public key files generated successfully !")
 	return nil
 }
