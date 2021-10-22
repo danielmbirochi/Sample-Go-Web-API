@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/rsa"
 	"expvar"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -14,6 +16,8 @@ import (
 
 	"github.com/ardanlabs/conf"
 	"github.com/danielmbirochi/go-sample-service/app/sales-api/handlers"
+	"github.com/danielmbirochi/go-sample-service/business/auth"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 )
 
@@ -35,11 +39,16 @@ func run(log *log.Logger) error {
 	var cfg struct {
 		conf.Version
 		Web struct {
-			APIHost         string        `conf:"default:0.0.0.0:3000"` // noprint
+			APIHost         string        `conf:"default:0.0.0.0:3000"` // noprint - this tag is used for hidding the config prop from stdout
 			DebugHost       string        `conf:"default:0.0.0.0:4000"`
 			ReadTimeout     time.Duration `conf:"default:5s"`
 			WriteTimeout    time.Duration `conf:"default:5s"`
 			ShutdownTimeout time.Duration `conf:"default:5s"`
+		}
+		Auth struct {
+			KeyID          string `conf:"default:54bb2165-71e1-41a6-af3e-7da4a0e1e2c1"`
+			PrivateKeyFile string `conf:"default:/Users/miranda/Documents/estudos/go/go-sample-service/private.pem"` // This is my local dev env, after moves to K8s it needs to reflects the correct path
+			Algorithm      string `conf:"default:RS256"`
 		}
 	}
 
@@ -86,6 +95,35 @@ func run(log *log.Logger) error {
 	log.Printf("main: Config: \n%v\n", configOut)
 
 	// ============================================================================================
+	// Initialize authentication support
+	log.Println("main : Started : Initializing authentication support")
+
+	privatePEM, err := ioutil.ReadFile(cfg.Auth.PrivateKeyFile)
+	if err != nil {
+		return errors.Wrap(err, "reading auth pem file")
+	}
+
+	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privatePEM)
+	if err != nil {
+		return errors.Wrap(err, "parsing auth pem file")
+	}
+
+	// In production the Key pair set (Auth.PrivateKeyFile) would be get from external services.
+	// For local development env we`re using the local file system for that.
+	lookupKey := func(kid string) (*rsa.PublicKey, error) {
+		switch kid {
+		case cfg.Auth.KeyID:
+			return &privateKey.PublicKey, nil
+		}
+		return nil, errors.Errorf("no key pair found for the specified kid: %s", kid)
+	}
+
+	auth, err := auth.New(cfg.Auth.Algorithm, lookupKey, auth.Keys{cfg.Auth.KeyID: privateKey})
+	if err != nil {
+		return errors.Wrap(err, "initializing auth service")
+	}
+
+	// ============================================================================================
 	// Start Debug Service
 	//
 	// /debug/pprof - Added to the default mux by importing the net/http/pprof package.
@@ -109,7 +147,7 @@ func run(log *log.Logger) error {
 
 	api := http.Server{
 		Addr:         cfg.Web.APIHost,
-		Handler:      handlers.API(build, shutdown, log),
+		Handler:      handlers.API(build, shutdown, log, auth),
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 	}
