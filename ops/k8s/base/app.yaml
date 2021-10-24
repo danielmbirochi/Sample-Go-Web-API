@@ -1,0 +1,69 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: sales-api
+spec:
+  selector:
+    matchLabels:
+      app: sales-api
+  template:
+    metadata:
+      labels:
+        app: sales-api
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      containers:
+      - name: zipkin
+        image: openzipkin/zipkin:2.21
+        ports:
+        - name: zipkin
+          containerPort: 9411
+      - name: app
+        image: sales-api-amd64:v1.0.0
+        env:
+        - name: SALES_DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: sales-api
+              key: db_host
+        - name: SALES_DB_DISABLE_TLS
+          valueFrom:
+            configMapKeyRef:
+              name: sales-api
+              key: db_disable_tls
+        - name: SALES_ZIPKIN_REPORTER_URI
+          valueFrom:
+            configMapKeyRef:
+              name: sales-api
+              key: zipkin_reporter_uri
+        ports:
+        - name: app
+          containerPort: 3000
+        - name: app-debug
+          containerPort: 4000
+        readinessProbe:
+          httpGet:
+            path: /v1/healthcheck
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: sales-api
+spec:
+  selector:
+    service: sales-api
+  ports:
+  - name: zipkin
+    port: 9411
+    targetPort: zipkin
+  - name: app
+    port: 3000
+    targetPort: app
+  - name: app-debug
+    port: 4000
+    targetPort: app-debug
