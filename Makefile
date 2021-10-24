@@ -1,5 +1,7 @@
 SHELL := /bin/bash
 
+export PROJECT = go-sample-service
+
 # ==============================================================================
 # CLI Help
 
@@ -8,6 +10,21 @@ admin-help:
 
 run-help:
 	go run app/sales-api/main.go -h
+
+# ==============================================================================
+# Building containers
+
+all: sales-api
+
+sales-api:
+	docker build \
+		-f ops/docker/dockerfile.sales-api \
+		-t sales-api-amd64:v1.0.0 \
+		--build-arg PACKAGE_NAME=sales-api \
+		--build-arg VCS_REF=`git rev-parse HEAD` \
+		--build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` \
+		.
+
 
 # ==============================================================================
 # Running locally

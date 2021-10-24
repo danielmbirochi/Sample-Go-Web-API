@@ -1,0 +1,42 @@
+FROM golang:alpine AS build-env
+
+ENV CGO_ENABLED 0
+ARG VCS_REF
+ARG PACKAGE_NAME
+
+RUN mkdir -p /service
+
+# Uncomment this code for not local vendoring third party dependencies.
+# It will cache dependencies for further builds.
+# COPY go.* /service/
+# WORKDIR /service
+# RUN go mod download
+
+WORKDIR /service
+COPY . .
+
+# Build the admin CLI tool.
+WORKDIR /service/app/sales-admin
+RUN go build -ldflags "-X main.build=${VCS_REF}"
+
+# Build the sales-api service binary.
+WORKDIR /service/app/${PACKAGE_NAME}
+RUN go build -ldflags "-X main.build=${VCS_REF}"
+
+
+FROM scratch
+
+ARG BUILD_DATE
+ARG VCS_REF
+ARG PACKAGE_NAME
+
+COPY --from=build-env /service/private.pem /app/private.pem
+COPY --from=build-env /service/app/sales-admin/sales-admin /app/admin
+COPY --from=build-env /service/app/${PACKAGE_NAME}/${PACKAGE_NAME} /app/main
+
+WORKDIR /app
+
+EXPOSE 3000
+EXPOSE 4000
+
+CMD ["/app/main"]
