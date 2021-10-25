@@ -17,6 +17,7 @@ import (
 	"github.com/ardanlabs/conf"
 	"github.com/danielmbirochi/go-sample-service/app/sales-api/handlers"
 	"github.com/danielmbirochi/go-sample-service/business/auth"
+	"github.com/danielmbirochi/go-sample-service/foundation/database"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 )
@@ -49,6 +50,13 @@ func run(log *log.Logger) error {
 			KeyID          string `conf:"default:54bb2165-71e1-41a6-af3e-7da4a0e1e2c1"`
 			PrivateKeyFile string `conf:"default:/app/private.pem"`
 			Algorithm      string `conf:"default:RS256"`
+		}
+		DB struct {
+			User       string `conf:"default:testuser"`
+			Password   string `conf:"default:mysecretpassword,noprint"`
+			Hostname   string `conf:"default:0.0.0.0"`
+			Name       string `conf:"default:testdb"`
+			DisableTLS bool   `conf:"default:false"`
 		}
 	}
 
@@ -123,6 +131,28 @@ func run(log *log.Logger) error {
 		return errors.Wrap(err, "initializing auth service")
 	}
 
+	// =========================================================================
+	// Start Database
+
+	log.Println("main: Initializing database support")
+
+	cfg.DB.DisableTLS = true
+
+	db, err := database.Open(database.Config{
+		User:       cfg.DB.User,
+		Password:   cfg.DB.Password,
+		Hostname:   cfg.DB.Hostname,
+		Name:       cfg.DB.Name,
+		DisableTLS: cfg.DB.DisableTLS,
+	})
+	if err != nil {
+		return errors.Wrap(err, "connecting to db")
+	}
+	defer func() {
+		log.Printf("main: Database Stopping : %s", cfg.DB.Hostname)
+		db.Close()
+	}()
+
 	// ============================================================================================
 	// Start Debug Service
 	//
@@ -147,7 +177,7 @@ func run(log *log.Logger) error {
 
 	api := http.Server{
 		Addr:         cfg.Web.APIHost,
-		Handler:      handlers.API(build, shutdown, log, auth),
+		Handler:      handlers.API(build, shutdown, log, auth, db),
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 	}
