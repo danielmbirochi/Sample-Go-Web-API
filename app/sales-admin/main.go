@@ -8,6 +8,7 @@ import (
 
 	"github.com/ardanlabs/conf"
 	"github.com/danielmbirochi/go-sample-service/app/sales-admin/commands"
+	"github.com/danielmbirochi/go-sample-service/foundation/database"
 	"github.com/pkg/errors"
 )
 
@@ -30,6 +31,13 @@ func run() error {
 	var cfg struct {
 		conf.Version
 		Args conf.Args
+		DB   struct {
+			User       string `conf:"default:testuser"`
+			Password   string `conf:"default:mysecretpassword,noprint"`
+			Hostname   string `conf:"default:0.0.0.0"`
+			Name       string `conf:"default:testdb"`
+			DisableTLS bool   `conf:"default:false"`
+		}
 	}
 	cfg.Version.SVN = build
 	cfg.Version.Desc = "This is an Admin CLI Tooling for the Go Sample Service. It is used for performing administrative tasks."
@@ -64,6 +72,16 @@ func run() error {
 	// =========================================================================
 	// Commands
 
+	cfg.DB.DisableTLS = true
+
+	dbConfig := database.Config{
+		User:       cfg.DB.User,
+		Password:   cfg.DB.Password,
+		Hostname:   cfg.DB.Hostname,
+		Name:       cfg.DB.Name,
+		DisableTLS: cfg.DB.DisableTLS,
+	}
+
 	switch cfg.Args.Num(0) {
 	case "keygen":
 		if err := commands.KeyGen(); err != nil {
@@ -78,10 +96,22 @@ func run() error {
 			return errors.Wrap(err, "generating token")
 		}
 
+	case "migrate":
+		if err := commands.Migrate(dbConfig); err != nil {
+			return errors.Wrap(err, "migrating database")
+		}
+
+	case "seed":
+		if err := commands.Seed(dbConfig); err != nil {
+			return errors.Wrap(err, "seeding database")
+		}
+
 	default:
 		fmt.Println("\n\n========================== SUPPORTED FLAGS ==========================")
 		fmt.Println("\n-keygen: generate a set of private/public key files")
 		fmt.Println("\n-tokengen: generate a JWT for a user with claims")
+		fmt.Println("\n-migrate: create the schema in the database")
+		fmt.Println("\n-seed: add data to the database")
 		return nil
 	}
 
