@@ -6,7 +6,7 @@ export PROJECT = go-sample-service
 # CLI Help
 
 admin-help:
-	go run app/sales-admin/main.go
+	go run app/sales-admin/main.go -h
 
 run-help:
 	go run app/sales-api/main.go -h
@@ -61,6 +61,9 @@ kind-sales-api-update: sales-api
 run:
 	go run app/sales-api/main.go
 
+run-admin:
+	go run app/sales-admin/main.go 
+
 build:
 	go build -o app/sales-api/sales-api app/sales-api/main.go
 
@@ -72,6 +75,12 @@ generate-keys:
 
 generate-token:
 	go run app/sales-admin/main.go tokengen ${EMAIL}
+
+db-migrations:
+	go run app/sales-admin/main.go migrate
+
+seed-db:
+	go run app/sales-admin/main.go seed
 
 # ==============================================================================
 # Running local tests
