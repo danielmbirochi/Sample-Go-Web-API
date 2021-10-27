@@ -14,6 +14,7 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/lib/pq v1.10.3
 	github.com/pkg/errors v0.9.1
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0
 )
