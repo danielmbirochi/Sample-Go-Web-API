@@ -4,6 +4,7 @@ package user
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/danielmbirochi/go-sample-service/business/auth"
@@ -29,8 +30,19 @@ var (
 	ErrForbidden = errors.New("attempted action is not allowed")
 )
 
+type UserService struct {
+	store *sqlx.DB
+}
+
+// New is a factory method for constructing user service.
+func New(log *log.Logger, sqlxDB *sqlx.DB) UserService {
+	return UserService{
+		store: sqlxDB,
+	}
+}
+
 // Create inserts a new user into the database.
-func Create(ctx context.Context, db *sqlx.DB, nu NewUser, now time.Time) (User, error) {
+func (us UserService) Create(ctx context.Context, nu NewUser, now time.Time) (User, error) {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(nu.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -51,7 +63,7 @@ func Create(ctx context.Context, db *sqlx.DB, nu NewUser, now time.Time) (User, 
 		(user_id, name, email, password_hash, roles, date_created, date_updated)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)`
 
-	if _, err = db.ExecContext(ctx, q, u.ID, u.Name, u.Email, u.PasswordHash, u.Roles, u.DateCreated, u.DateUpdated); err != nil {
+	if _, err = us.store.ExecContext(ctx, q, u.ID, u.Name, u.Email, u.PasswordHash, u.Roles, u.DateCreated, u.DateUpdated); err != nil {
 		return User{}, errors.Wrap(err, "inserting user")
 	}
 
@@ -59,8 +71,8 @@ func Create(ctx context.Context, db *sqlx.DB, nu NewUser, now time.Time) (User, 
 }
 
 // Update replaces a user document in the database.
-func Update(ctx context.Context, claims auth.Claims, db *sqlx.DB, id string, uu UpdateUser, now time.Time) error {
-	u, err := GetById(ctx, claims, db, id)
+func (us UserService) Update(ctx context.Context, claims auth.Claims, id string, uu UpdateUser, now time.Time) error {
+	u, err := us.GetById(ctx, claims, id)
 	if err != nil {
 		return err
 	}
@@ -91,7 +103,7 @@ func Update(ctx context.Context, claims auth.Claims, db *sqlx.DB, id string, uu 
 		"date_updated" = $6
 		WHERE user_id = $1`
 
-	if _, err = db.ExecContext(ctx, q, id, u.Name, u.Email, u.Roles, u.PasswordHash, u.DateUpdated); err != nil {
+	if _, err = us.store.ExecContext(ctx, q, id, u.Name, u.Email, u.Roles, u.PasswordHash, u.DateUpdated); err != nil {
 		return errors.Wrap(err, "updating user")
 	}
 
@@ -99,14 +111,14 @@ func Update(ctx context.Context, claims auth.Claims, db *sqlx.DB, id string, uu 
 }
 
 // Delete removes a user from the database.
-func Delete(ctx context.Context, db *sqlx.DB, id string) error {
+func (us UserService) Delete(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
 		return ErrInvalidID
 	}
 
 	const q = `DELETE FROM users WHERE user_id = $1`
 
-	if _, err := db.ExecContext(ctx, q, id); err != nil {
+	if _, err := us.store.ExecContext(ctx, q, id); err != nil {
 		return errors.Wrapf(err, "deleting user %s", id)
 	}
 
@@ -115,11 +127,11 @@ func Delete(ctx context.Context, db *sqlx.DB, id string) error {
 
 // List retrieves a list of existing users from the database.
 // PS: List func needs to be updated for supporting data pagination.
-func List(ctx context.Context, db *sqlx.DB) ([]User, error) {
+func (us UserService) List(ctx context.Context) ([]User, error) {
 	const q = `SELECT * FROM users`
 
 	users := []User{}
-	if err := db.SelectContext(ctx, &users, q); err != nil {
+	if err := us.store.SelectContext(ctx, &users, q); err != nil {
 		return nil, errors.Wrap(err, "selecting users")
 	}
 
@@ -127,7 +139,7 @@ func List(ctx context.Context, db *sqlx.DB) ([]User, error) {
 }
 
 // GetById gets the specified user from the database.
-func GetById(ctx context.Context, claims auth.Claims, db *sqlx.DB, userID string) (User, error) {
+func (us UserService) GetById(ctx context.Context, claims auth.Claims, userID string) (User, error) {
 	if _, err := uuid.Parse(userID); err != nil {
 		return User{}, ErrInvalidID
 	}
@@ -140,7 +152,7 @@ func GetById(ctx context.Context, claims auth.Claims, db *sqlx.DB, userID string
 	const q = `SELECT * FROM users WHERE user_id = $1`
 
 	var u User
-	if err := db.GetContext(ctx, &u, q, userID); err != nil {
+	if err := us.store.GetContext(ctx, &u, q, userID); err != nil {
 		if err == sql.ErrNoRows {
 			return User{}, ErrNotFound
 		}
@@ -153,11 +165,11 @@ func GetById(ctx context.Context, claims auth.Claims, db *sqlx.DB, userID string
 // Authenticate finds a user by their email and verifies their password. On
 // success it returns a Claims value representing this user. The claims can be
 // used to generate a token for future authentication.
-func Authenticate(ctx context.Context, db *sqlx.DB, now time.Time, email, password string) (auth.Claims, error) {
+func (us UserService) Authenticate(ctx context.Context, now time.Time, email, password string) (auth.Claims, error) {
 	const q = `SELECT * FROM users WHERE email = $1`
 
 	var u User
-	if err := db.GetContext(ctx, &u, q, email); err != nil {
+	if err := us.store.GetContext(ctx, &u, q, email); err != nil {
 
 		// Normally we would return ErrNotFound in this scenario but we do not want
 		// to leak to an unauthenticated user which emails are in the system.
