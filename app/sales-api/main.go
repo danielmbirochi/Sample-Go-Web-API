@@ -47,7 +47,7 @@ func run(log *log.Logger) error {
 			ShutdownTimeout time.Duration `conf:"default:5s"`
 		}
 		Auth struct {
-			KeyID          string `conf:"default:54bb2165-71e1-41a6-af3e-7da4a0e1e2c1"`
+			KeyID          string `conf:"default:32bc1165-24t2-61a7-af3e-9da4agf2h1p1"`
 			PrivateKeyFile string `conf:"default:/app/private.pem"`
 			Algorithm      string `conf:"default:RS256"`
 		}

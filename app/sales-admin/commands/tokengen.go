@@ -36,7 +36,7 @@ func TokenGen(id string, privateKeyFile string, algorithm string) error {
 	//
 	// Here we`re using an arbitrary KID and the hardcoded key lookup function to fetch the right
 	// key pair given a KID.
-	keyID := "54bb2165-71e1-41a6-af3e-7da4a0e1e2c1"
+	keyID := "32bc1165-24t2-61a7-af3e-9da4agf2h1p1"
 	keyLookupFunc := func(publicKID string) (*rsa.PublicKey, error) {
 		switch publicKID {
 		case keyID:
