@@ -111,7 +111,7 @@ func (us UserService) Update(ctx context.Context, traceID string, claims auth.Cl
 		WHERE user_id = $1`
 
 	us.log.Printf("%s : %s : query : %s", traceID, "user.Update",
-		database.Log(q, usr.ID, usr.Name, usr.Email, usr.PasswordHash, usr.Roles, usr.DateCreated, usr.DateUpdated),
+		database.Log(q, usr.ID, usr.Name, usr.Email, usr.Roles, usr.PasswordHash, usr.DateCreated, usr.DateUpdated),
 	)
 
 	if _, err = us.db.ExecContext(ctx, q, id, usr.Name, usr.Email, usr.Roles, usr.PasswordHash, usr.DateUpdated); err != nil {
