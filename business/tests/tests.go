@@ -17,15 +17,15 @@ import (
 
 // Success and failure markers.
 const (
-	success = "\u2713"
-	failed  = "\u2717"
+	Success = "\u2713"
+	Failed  = "\u2717"
 )
 
 // Configs for running tests.
 var (
 	dbImage = "postgres:13.4-alpine"
 	dbPort  = "5432"
-	dbArgs  = []string{"-U", "testuser", "-e", "POSTGRES_PASSWORD=mysecretpassword", "testdb"}
+	dbArgs  = []string{"-e", "POSTGRES_PASSWORD=mysecretpassword", "-e", "POSTGRES_USER=testuser", "-e", "POSTGRES_DB=testdb"}
 	AdminID = "32bc1165-24t2-61a7-af3e-9da4agf2h1p1"
 	UserID  = "14hg2372-66e5-34e9-jl8d-6ga1tuf7l3r4"
 )
@@ -80,7 +80,7 @@ func NewUnit(t *testing.T) (*log.Logger, *sqlx.DB, func()) {
 		stopContainer(t, c.ID)
 	}
 
-	log := log.New(os.Stdout, "TEST : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+	log := log.New(os.Stdout, "\nTEST : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
 
 	return log, db, teardown
 }
