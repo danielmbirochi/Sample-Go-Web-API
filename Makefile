@@ -89,6 +89,11 @@ test:
 	go test -v ./... -count=1
 	staticcheck ./...
 
+test-coverage:
+	go test -coverprofile cover.out -v ./... -count=1
+
+test-coverage-detail:
+	go tool cover -html cover.out
 
 # ==============================================================================
 # Modules support
