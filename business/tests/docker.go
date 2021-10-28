@@ -15,7 +15,7 @@ type Container struct {
 }
 
 func startContainer(t *testing.T, image string, port string, args ...string) *Container {
-	arg := []string{"rung", "-p", "-d"}
+	arg := []string{"run", "-P", "-d"}
 	arg = append(arg, args...)
 	arg = append(arg, image)
 
@@ -91,7 +91,7 @@ func extractIPPort(t *testing.T, doc []map[string]interface{}, port string) (str
 	if !exists {
 		t.Fatal("could not get network ports/tcp list settings")
 	}
-	if len(list) != 1 {
+	if len(list) < 1 {
 		t.Fatal("could not get network ports/tcp list settings")
 	}
 	data, exists := list[0].(map[string]interface{})
