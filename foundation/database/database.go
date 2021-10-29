@@ -3,12 +3,21 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // Postgres driver
+)
+
+var (
+	ErrNotFound              = errors.New("not found")
+	ErrInvalidID             = errors.New("Invalid ID format")
+	ErrAuthenticationFailure = errors.New("authentication failed")
+	ErrForbidden             = errors.New("action forbidden")
 )
 
 // Config is the required props for connecting to database.
@@ -51,6 +60,51 @@ func StatusCheck(ctx context.Context, db *sqlx.DB) error {
 	const q = `SELECT true`
 	var tmp bool
 	return db.QueryRowContext(ctx, q).Scan(&tmp)
+}
+
+// NamedQuerySlice is a helper function for executing queries that return a
+// collection of data to be unmarshaled into a slice.
+func NamedQuerySlice(ctx context.Context, db *sqlx.DB, query string, data interface{}, dest interface{}) error {
+
+	val := reflect.ValueOf(dest)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+		return errors.New("must provide a pointer to a slice")
+	}
+
+	rows, err := db.NamedQueryContext(ctx, query, data)
+	if err != nil {
+		return err
+	}
+
+	slice := val.Elem()
+	for rows.Next() {
+		v := reflect.New(slice.Type().Elem())
+		if err := rows.StructScan(v.Interface()); err != nil {
+			return err
+		}
+		slice.Set(reflect.Append(slice, v.Elem()))
+	}
+
+	return nil
+}
+
+// NamedQueryStruct is a helper function for executing queries that return a
+// single value to be unmarshalled into a struct type.
+func NamedQueryStruct(ctx context.Context, db *sqlx.DB, query string, data interface{}, dest interface{}) error {
+
+	rows, err := db.NamedQueryContext(ctx, query, data)
+	if err != nil {
+		return err
+	}
+	if !rows.Next() {
+		return ErrNotFound
+	}
+
+	if err := rows.StructScan(dest); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Log provides a parsed print version of the query and parameters (sqlx does not provide it).
