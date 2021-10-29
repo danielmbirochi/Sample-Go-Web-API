@@ -3,13 +3,19 @@ package tests
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"fmt"
 	"log"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/danielmbirochi/go-sample-service/business/repository/schema"
+	"github.com/danielmbirochi/go-sample-service/business/auth"
+	"github.com/danielmbirochi/go-sample-service/business/core/user"
+	"github.com/danielmbirochi/go-sample-service/business/data/schema"
 	"github.com/danielmbirochi/go-sample-service/foundation/database"
+	"github.com/danielmbirochi/go-sample-service/foundation/docker"
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -33,7 +39,7 @@ var (
 // NewUnit creates a test database. It sets the proper db migrations.
 // It returns the logger, the database and a teardown function.
 func NewUnit(t *testing.T) (*log.Logger, *sqlx.DB, func()) {
-	c := startContainer(t, dbImage, dbPort, dbArgs...)
+	c := docker.StartContainer(t, dbImage, dbPort, dbArgs...)
 
 	cfg := database.Config{
 		User:       "testuser",
@@ -62,13 +68,13 @@ func NewUnit(t *testing.T) (*log.Logger, *sqlx.DB, func()) {
 	}
 
 	if pingError != nil {
-		dumpContainerLogs(t, c.ID)
-		stopContainer(t, c.ID)
+		docker.DumpContainerLogs(t, c.ID)
+		docker.StopContainer(t, c.ID)
 		t.Fatalf("database never ready: %v", pingError)
 	}
 
 	if err := schema.Migrate(db); err != nil {
-		stopContainer(t, c.ID)
+		docker.StopContainer(t, c.ID)
 		t.Fatalf("migrating error: %s", err)
 	}
 
@@ -77,7 +83,7 @@ func NewUnit(t *testing.T) (*log.Logger, *sqlx.DB, func()) {
 	teardown := func() {
 		t.Helper()
 		db.Close()
-		stopContainer(t, c.ID)
+		docker.StopContainer(t, c.ID)
 	}
 
 	log := log.New(os.Stdout, "\nTEST : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
@@ -103,4 +109,74 @@ func StringPointer(s string) *string {
 // IntPointer is a helper to get a *int from a int for helping on running tests.
 func IntPointer(i int) *int {
 	return &i
+}
+
+// Test owns state for running and shutting down integration tests.
+type Test struct {
+	TraceID  string
+	DB       *sqlx.DB
+	Log      *log.Logger
+	Auth     *auth.Auth
+	KID      string
+	Teardown func()
+
+	t *testing.T
+}
+
+// NewIntegration creates a database, seeds it, constructs an authenticator.
+func NewIntegration(t *testing.T) *Test {
+	log, db, teardown := NewUnit(t)
+
+	if err := schema.Seed(db); err != nil {
+		t.Fatal(err)
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	keyID := "4754d86b-7a6d-4df5-9c65-224741361492"
+	lookup := func(publicKID string) (*rsa.PublicKey, error) {
+		switch publicKID {
+		case keyID:
+			return &privateKey.PublicKey, nil
+		}
+		return nil, fmt.Errorf("no public key found for the specified kid: %s", publicKID)
+	}
+
+	auth, err := auth.New("RS256", lookup, auth.Keys{keyID: privateKey})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test := Test{
+		TraceID:  "00000000-0000-0000-0000-000000000001",
+		DB:       db,
+		Log:      log,
+		Auth:     auth,
+		KID:      keyID,
+		t:        t,
+		Teardown: teardown,
+	}
+
+	return &test
+}
+
+// Token generates an authenticated token.
+func (test *Test) Token(email, pass string) string {
+	test.t.Log("Generating token for test ...")
+
+	u := user.New(test.Log, test.DB)
+	claims, err := u.Authenticate(context.Background(), test.TraceID, time.Now(), email, pass)
+	if err != nil {
+		test.t.Fatal(err)
+	}
+
+	token, err := test.Auth.GenerateToken(test.KID, claims)
+	if err != nil {
+		test.t.Fatal(err)
+	}
+
+	return token
 }
