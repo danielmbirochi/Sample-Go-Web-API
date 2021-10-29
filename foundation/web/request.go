@@ -39,9 +39,10 @@ func init() {
 	})
 }
 
-// Func Params extract request params from the URL called
-func Params(r *http.Request) map[string]string {
-	return httptreemux.ContextParams(r.Context())
+// Func Param extract request param from the URL called based on the provided key
+func Param(r *http.Request, key string) string {
+	m := httptreemux.ContextParams(r.Context())
+	return m[key]
 }
 
 // Decode gets the JSON value from the request body and decode it.
