@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/danielmbirochi/go-sample-service/business/auth"
+	"github.com/danielmbirochi/go-sample-service/business/core/user"
 	middleware "github.com/danielmbirochi/go-sample-service/business/middlewares"
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
 	"github.com/jmoiron/sqlx"
@@ -22,6 +23,18 @@ func API(build string, shutdown chan os.Signal, log *log.Logger, a *auth.Auth, d
 		db:    db,
 	}
 	app.Handle(http.MethodGet, "/v1/healthcheck", c.readiness)
+
+	// Register endpoints for accessing user service.
+	uh := usersHandler{
+		usecases: user.New(log, db),
+		auth:     a,
+	}
+	app.Handle(http.MethodGet, "/v1/users/:page/:rows", uh.query, middleware.Authenticate(a), middleware.Authorize(auth.RoleAdmin))
+	app.Handle(http.MethodGet, "/v1/users/token/:kid", uh.token)
+	app.Handle(http.MethodGet, "/v1/users/:id", uh.queryByID, middleware.Authenticate(a))
+	app.Handle(http.MethodPost, "/v1/users", uh.create, middleware.Authenticate(a), middleware.Authorize(auth.RoleAdmin))
+	app.Handle(http.MethodPut, "/v1/users/:id", uh.update, middleware.Authenticate(a), middleware.Authorize(auth.RoleAdmin))
+	app.Handle(http.MethodDelete, "/v1/users/:id", uh.delete, middleware.Authenticate(a), middleware.Authorize(auth.RoleAdmin))
 
 	return app
 }
