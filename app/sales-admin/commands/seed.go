@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/danielmbirochi/go-sample-service/business/repository/schema"
+	"github.com/danielmbirochi/go-sample-service/business/data/schema"
 	"github.com/danielmbirochi/go-sample-service/foundation/database"
 	"github.com/pkg/errors"
 )

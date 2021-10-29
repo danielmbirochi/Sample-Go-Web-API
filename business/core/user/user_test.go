@@ -6,7 +6,7 @@ import (
 
 	"github.com/danielmbirochi/go-sample-service/business/auth"
 	"github.com/danielmbirochi/go-sample-service/business/core/user"
-	"github.com/danielmbirochi/go-sample-service/business/repository/schema"
+	"github.com/danielmbirochi/go-sample-service/business/data/schema"
 	"github.com/danielmbirochi/go-sample-service/business/tests"
 
 	"github.com/golang-jwt/jwt/v4"
