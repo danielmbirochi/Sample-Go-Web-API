@@ -62,9 +62,11 @@ func (us UserService) Create(ctx context.Context, traceID string, nu NewUser, no
 		DateUpdated:  now.UTC(),
 	}
 
-	const q = `INSERT INTO users
+	const q = `
+	INSERT INTO users
 		(user_id, name, email, password_hash, roles, date_created, date_updated)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
 
 	us.log.Printf("%s : %s : query : %s", traceID, "user.Create",
 		database.Log(q, usr.ID, usr.Name, usr.Email, usr.PasswordHash, usr.Roles, usr.DateCreated, usr.DateUpdated),
@@ -102,13 +104,16 @@ func (us UserService) Update(ctx context.Context, traceID string, claims auth.Cl
 	}
 	usr.DateUpdated = now
 
-	const q = `UPDATE users SET
-		"name" = $2,
-		"email" = $3,
-		"roles" = $4,
-		"password_hash" = $5,
-		"date_updated" = $6
-		WHERE user_id = $1`
+	const q = `
+	UPDATE users 
+		SET
+			"name" = $2,
+			"email" = $3,
+			"roles" = $4,
+			"password_hash" = $5,
+			"date_updated" = $6
+		WHERE user_id = $1
+	`
 
 	us.log.Printf("%s : %s : query : %s", traceID, "user.Update",
 		database.Log(q, usr.ID, usr.Name, usr.Email, usr.Roles, usr.PasswordHash, usr.DateCreated, usr.DateUpdated),
@@ -127,7 +132,11 @@ func (us UserService) Delete(ctx context.Context, traceID string, id string) err
 		return ErrInvalidID
 	}
 
-	const q = `DELETE FROM users WHERE user_id = $1`
+	const q = `
+	DELETE 
+		FROM users 
+			WHERE user_id = $1
+	`
 
 	us.log.Printf("%s : %s : query : %s", traceID, "user.Delete",
 		database.Log(q, id),
@@ -154,7 +163,7 @@ func (us UserService) List(ctx context.Context, traceID string, pageNumber int, 
 
 	const q = `
 	SELECT * 
-	FROM users
+		FROM users
 	ORDER BY user_id
 	OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY
 	`
@@ -185,7 +194,11 @@ func (us UserService) GetById(ctx context.Context, traceID string, claims auth.C
 		return User{}, ErrForbidden
 	}
 
-	const q = `SELECT * FROM users WHERE user_id = $1`
+	const q = `
+	SELECT * 
+		FROM users 
+			WHERE user_id = $1
+	`
 
 	us.log.Printf("%s : %s : query : %s", traceID, "user.GetById",
 		database.Log(q, userID),
@@ -205,7 +218,11 @@ func (us UserService) GetById(ctx context.Context, traceID string, claims auth.C
 // GetByEmail gets the specified user from the database.
 func (us UserService) GetByEmail(ctx context.Context, traceID string, claims auth.Claims, email string) (User, error) {
 
-	const q = `SELECT * FROM users WHERE email = $1`
+	const q = `
+	SELECT * 
+		FROM users 
+			WHERE email = $1
+	`
 
 	us.log.Printf("%s : %s : query : %s", traceID, "user.GetByEmail",
 		database.Log(q, email),
@@ -230,8 +247,17 @@ func (us UserService) GetByEmail(ctx context.Context, traceID string, claims aut
 // Authenticate finds a user by their email and verifies their password. On
 // success it returns a Claims value representing this user. The claims can be
 // used to generate a token for future authentication.
-func (us UserService) Authenticate(ctx context.Context, now time.Time, email, password string) (auth.Claims, error) {
-	const q = `SELECT * FROM users WHERE email = $1`
+func (us UserService) Authenticate(ctx context.Context, traceID string, now time.Time, email, password string) (auth.Claims, error) {
+
+	const q = `
+	SELECT * 
+		FROM users 
+			WHERE email = $1
+	`
+
+	us.log.Printf("%s: %s: %s", traceID, "user.Authenticate",
+		database.Log(q, email),
+	)
 
 	var u User
 	if err := us.db.GetContext(ctx, &u, q, email); err != nil {
