@@ -142,15 +142,32 @@ func (us UserService) Delete(ctx context.Context, traceID string, id string) err
 
 // List retrieves a list of existing users from the database.
 // PS: List func needs to be updated for supporting data pagination.
-func (us UserService) List(ctx context.Context, traceID string) ([]User, error) {
-	const q = `SELECT * FROM users`
+func (us UserService) List(ctx context.Context, traceID string, pageNumber int, rowsPerPage int) ([]User, error) {
+
+	data := struct {
+		Offset      int `db:"offset"`
+		RowsPerPage int `db:"rows_per_page"`
+	}{
+		Offset:      (pageNumber - 1) * rowsPerPage,
+		RowsPerPage: rowsPerPage,
+	}
+
+	const q = `
+	SELECT * 
+	FROM users
+	ORDER BY user_id
+	OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY
+	`
 
 	us.log.Printf("%s : %s : query : %s", traceID, "user.List",
-		database.Log(q),
+		database.Log(q, data),
 	)
 
-	users := []User{}
-	if err := us.db.SelectContext(ctx, &users, q); err != nil {
+	var users []User
+	if err := database.NamedQuerySlice(ctx, us.db, q, data, &users); err != nil {
+		if err == database.ErrNotFound {
+			return nil, database.ErrNotFound
+		}
 		return nil, errors.Wrap(err, "selecting users")
 	}
 
@@ -236,7 +253,7 @@ func (us UserService) Authenticate(ctx context.Context, now time.Time, email, pa
 
 	claims := auth.Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "service project",
+			Issuer:    "go-sample-service",
 			Subject:   u.ID,
 			Audience:  []string{"students"},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
