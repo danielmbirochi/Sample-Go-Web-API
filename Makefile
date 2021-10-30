@@ -3,6 +3,18 @@ SHELL := /bin/bash
 export PROJECT = go-sample-service
 
 # ==============================================================================
+# Testing the running system 
+#
+# curl --user "admin@example.com:gophers" http://localhost:3000/v1/users/token/32bc1165-24t2-61a7-af3e-9da4agf2h1p1
+# export TOKEN="YOUR_TOKEN_HERE"
+# curl -H "Authorization: Bearer ${TOKEN}" http://localhost:3000/v1/users/1/2
+#
+# hey -m GET -c 100 -n 10000 -H "Authorization: Bearer ${TOKEN}" http://localhost:3000/v1/users/1/2
+# zipkin: http://localhost:9411
+# expvarmon -ports 4000 -vars build,requests,goroutines,errors,mem:memstats.Alloc
+#
+
+# ==============================================================================
 # CLI Help
 
 admin-help:
