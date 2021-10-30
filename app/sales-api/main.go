@@ -20,6 +20,12 @@ import (
 	"github.com/danielmbirochi/go-sample-service/foundation/database"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 var build = "develop"
@@ -57,6 +63,11 @@ func run(log *log.Logger) error {
 			Hostname   string `conf:"default:0.0.0.0"`
 			Name       string `conf:"default:testdb"`
 			DisableTLS bool   `conf:"default:false"`
+		}
+		Zipkin struct {
+			ReporterURI string  `conf:"default:http://localhost:9411/api/v2/spans"`
+			ServiceName string  `conf:"default:sales-api"`
+			Probability float64 `conf:"default:0.05"`
 		}
 	}
 
@@ -152,6 +163,42 @@ func run(log *log.Logger) error {
 		log.Printf("main: Database Stopping : %s", cfg.DB.Hostname)
 		db.Close()
 	}()
+
+	// =========================================================================
+	// Start Tracing Support
+
+	// WARNING: The current Init settings are using defaults which may not be
+	// compatible with your project. Please review the documentation for
+	// opentelemetry.
+
+	log.Println("startup", "status", "initializing OT/Zipkin tracing support")
+
+	exporter, err := zipkin.New(
+		cfg.Zipkin.ReporterURI,
+		zipkin.WithLogger(log),
+	)
+	if err != nil {
+		return errors.Wrap(err, "creating new zipkin exporter")
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithSampler(trace.TraceIDRatioBased(cfg.Zipkin.Probability)),
+		trace.WithBatcher(exporter,
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+			trace.WithBatchTimeout(trace.DefaultBatchTimeout),
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+		),
+		trace.WithResource(
+			resource.NewWithAttributes(
+				semconv.SchemaURL,
+				semconv.ServiceNameKey.String(cfg.Zipkin.ServiceName),
+				attribute.String("exporter", "zipkin"),
+			),
+		),
+	)
+
+	otel.SetTracerProvider(tp)
+	defer tp.Shutdown(context.Background())
 
 	// ============================================================================================
 	// Start Debug Service
