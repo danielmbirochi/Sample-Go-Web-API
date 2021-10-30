@@ -9,3 +9,5 @@ nodes:
     hostPort: 3000
   - containerPort: 4000
     hostPort: 4000
+  - containerPort: 9411
+    hostPort: 9411
