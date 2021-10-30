@@ -95,6 +95,9 @@ test-coverage:
 test-coverage-detail:
 	go tool cover -html cover.out
 
+test-crud:
+	cd app/sales-api/tests && go test -run TestUsers/crud -v 
+
 # ==============================================================================
 # Modules support
 
