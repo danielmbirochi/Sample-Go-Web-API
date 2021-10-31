@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
+	"go.opentelemetry.io/otel"
 )
 
 // m contains the global program of metrics for the app.
@@ -27,6 +28,8 @@ func Metrics() web.Middleware {
 
 		// Create the handler that will be attached in the middleware onion chain.
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+			ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.middlewares.Metrics")
+			defer span.End()
 
 			err := innerHandler(ctx, w, r)
 

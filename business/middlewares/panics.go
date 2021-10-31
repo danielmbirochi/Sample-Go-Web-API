@@ -8,6 +8,7 @@ import (
 
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
 )
 
 // Panics recovers from panics propagated by the innerHandler and converts the panic
@@ -18,6 +19,8 @@ func Panics(log *log.Logger) web.Middleware {
 
 		// Create the Panic handler that will be attached in the middleware onion chain.
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
+			ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.middlewares.Panics")
+			defer span.End()
 
 			v, ok := ctx.Value(web.KeyValues).(*web.Values)
 			if !ok {

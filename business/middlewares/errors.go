@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
+	"go.opentelemetry.io/otel"
 )
 
 // Errors handles errors coming out of the call chain (propagated by the innerHandler). It detects normal
@@ -17,6 +18,8 @@ func Errors(log *log.Logger) web.Middleware {
 
 		// Creates the Error handler that will be attached in the middleware onion chain (outer handler of the onion)
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+			ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.middlewares.Errors")
+			defer span.End()
 
 			// If the context is missing this value (integrity error), request the service
 			// to be shutdown gracefully.

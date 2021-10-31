@@ -10,6 +10,7 @@ import (
 	"github.com/danielmbirochi/go-sample-service/business/core/user"
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
 )
 
 type usersHandler struct {
@@ -17,7 +18,9 @@ type usersHandler struct {
 	auth     *auth.Auth
 }
 
-func (uh usersHandler) query(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (uh usersHandler) list(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "handlers.usersHandler.list")
+	defer span.End()
 
 	v, ok := ctx.Value(web.KeyValues).(*web.Values)
 	if !ok {
@@ -44,6 +47,8 @@ func (uh usersHandler) query(ctx context.Context, w http.ResponseWriter, r *http
 }
 
 func (uh usersHandler) queryByID(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "handlers.usersHandler.queryByID")
+	defer span.End()
 
 	v, ok := ctx.Value(web.KeyValues).(*web.Values)
 	if !ok {
@@ -74,6 +79,8 @@ func (uh usersHandler) queryByID(ctx context.Context, w http.ResponseWriter, r *
 }
 
 func (uh usersHandler) create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "handlers.usersHandler.create")
+	defer span.End()
 
 	v, ok := ctx.Value(web.KeyValues).(*web.Values)
 	if !ok {
@@ -94,6 +101,8 @@ func (uh usersHandler) create(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (uh usersHandler) update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "handlers.usersHandler.update")
+	defer span.End()
 
 	v, ok := ctx.Value(web.KeyValues).(*web.Values)
 	if !ok {
@@ -129,6 +138,8 @@ func (uh usersHandler) update(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (uh usersHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "handlers.usersHandler.delete")
+	defer span.End()
 
 	v, ok := ctx.Value(web.KeyValues).(*web.Values)
 	if !ok {

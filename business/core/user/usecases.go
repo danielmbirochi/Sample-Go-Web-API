@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -46,6 +47,8 @@ func New(log *log.Logger, sqlxDB *sqlx.DB) UserService {
 
 // Create inserts a new user into the database.
 func (us UserService) Create(ctx context.Context, traceID string, nu NewUser, now time.Time) (User, error) {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.core.user.Create")
+	defer span.End()
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(nu.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -81,6 +84,9 @@ func (us UserService) Create(ctx context.Context, traceID string, nu NewUser, no
 
 // Update replaces a user document in the database.
 func (us UserService) Update(ctx context.Context, traceID string, claims auth.Claims, id string, uu UpdateUser, now time.Time) error {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.core.user.Update")
+	defer span.End()
+
 	usr, err := us.GetById(ctx, traceID, claims, id)
 	if err != nil {
 		return err
@@ -128,6 +134,9 @@ func (us UserService) Update(ctx context.Context, traceID string, claims auth.Cl
 
 // Delete removes a user from the database.
 func (us UserService) Delete(ctx context.Context, traceID string, id string) error {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.core.user.Delete")
+	defer span.End()
+
 	if _, err := uuid.Parse(id); err != nil {
 		return ErrInvalidID
 	}
@@ -152,6 +161,8 @@ func (us UserService) Delete(ctx context.Context, traceID string, id string) err
 // List retrieves a list of existing users from the database.
 // PS: List func needs to be updated for supporting data pagination.
 func (us UserService) List(ctx context.Context, traceID string, pageNumber int, rowsPerPage int) ([]User, error) {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.core.user.List")
+	defer span.End()
 
 	data := struct {
 		Offset      int `db:"offset"`
@@ -185,6 +196,9 @@ func (us UserService) List(ctx context.Context, traceID string, pageNumber int, 
 
 // GetById gets the specified user from the database.
 func (us UserService) GetById(ctx context.Context, traceID string, claims auth.Claims, userID string) (User, error) {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.core.user.GetById")
+	defer span.End()
+
 	if _, err := uuid.Parse(userID); err != nil {
 		return User{}, ErrInvalidID
 	}
@@ -217,6 +231,8 @@ func (us UserService) GetById(ctx context.Context, traceID string, claims auth.C
 
 // GetByEmail gets the specified user from the database.
 func (us UserService) GetByEmail(ctx context.Context, traceID string, claims auth.Claims, email string) (User, error) {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.core.user.GetByEmail")
+	defer span.End()
 
 	const q = `
 	SELECT * 
@@ -248,6 +264,8 @@ func (us UserService) GetByEmail(ctx context.Context, traceID string, claims aut
 // success it returns a Claims value representing this user. The claims can be
 // used to generate a token for future authentication.
 func (us UserService) Authenticate(ctx context.Context, traceID string, now time.Time, email, password string) (auth.Claims, error) {
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.core.user.Authenticate")
+	defer span.End()
 
 	const q = `
 	SELECT * 

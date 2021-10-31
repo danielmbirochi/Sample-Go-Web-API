@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
+	"go.opentelemetry.io/otel"
 )
 
 // Logger writes some information about the request to the logs in the
@@ -17,6 +18,8 @@ func Logger(log *log.Logger) web.Middleware {
 
 		// Creates the request Logger handler that will be attached in the middleware chain (outer handler of the onion)
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+			ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.middlewares.Logger")
+			defer span.End()
 
 			// If the context is missing this value (integrity error), request the service
 			// to be shutdown gracefully.

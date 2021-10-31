@@ -8,6 +8,7 @@ import (
 
 	"github.com/danielmbirochi/go-sample-service/business/auth"
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
+	"go.opentelemetry.io/otel"
 )
 
 // ErrForbidden is returned when an authenticated user does not have
@@ -25,6 +26,8 @@ func Authenticate(a *auth.Auth) web.Middleware {
 
 		// Handler func
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+			ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.middlewares.Authenticate")
+			defer span.End()
 
 			// Expecting header: Authorization: bearer <token>
 			authHeader := r.Header.Get("authorization")
@@ -64,6 +67,8 @@ func Authorize(roles ...string) web.Middleware {
 
 		// Handler func
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+			ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "business.middlewares.Authorize")
+			defer span.End()
 
 			// If the context is missing this value (integrity error) return failure.
 			claims, ok := ctx.Value(auth.Key).(auth.Claims)

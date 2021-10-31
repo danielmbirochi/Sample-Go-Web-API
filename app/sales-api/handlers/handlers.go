@@ -29,7 +29,7 @@ func API(build string, shutdown chan os.Signal, log *log.Logger, a *auth.Auth, d
 		usecases: user.New(log, db),
 		auth:     a,
 	}
-	app.Handle(http.MethodGet, "/v1/users/:page/:rows", uh.query, middleware.Authenticate(a), middleware.Authorize(auth.RoleAdmin))
+	app.Handle(http.MethodGet, "/v1/users/:page/:rows", uh.list, middleware.Authenticate(a), middleware.Authorize(auth.RoleAdmin))
 	app.Handle(http.MethodGet, "/v1/users/token/:kid", uh.token)
 	app.Handle(http.MethodGet, "/v1/users/:id", uh.queryByID, middleware.Authenticate(a))
 	app.Handle(http.MethodPost, "/v1/users", uh.create, middleware.Authenticate(a), middleware.Authorize(auth.RoleAdmin))
