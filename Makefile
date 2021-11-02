@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-export PROJECT = go-sample-service
+export CLUSTER_NAME = go-sample-service
 
 # ==============================================================================
 # Testing the running system 
@@ -41,29 +41,37 @@ sales-api:
 # Running from within k8s/dev
 
 kind-up:
-	kind create cluster --image kindest/node:v1.22.1 --name go-sample-service --config ops/k8s/dev/kind-config.yaml
+	kind create cluster --image kindest/node:v1.22.1 --name ${CLUSTER_NAME} --config ops/k8s/dev/kind-config.yaml
+# Runs the command below to set a default namespace
+# kubectl config set-context --current --namespace=sales-system
 
 kind-down:
-	kind delete cluster --name go-sample-service
+	kind delete cluster --name ${CLUSTER_NAME}
 
 kind-load:
-	kind load docker-image sales-api-amd64:v1.0.0 --name go-sample-service
+	kind load docker-image sales-api-amd64:v1.0.0 --name ${CLUSTER_NAME}
 
-kind-services:
+kind-apply:
 	kustomize build ops/k8s/dev | kubectl apply -f -
 
 kind-status:
-	kubectl get nodes
-	kubectl get pods --watch
+	kubectl get nodes -o wide
+	kubectl get svc -o wide
 
 kind-status-full:
-	kubectl describe pod -lapp=sales-api
+	kubectl describe pod -lapp=sales-api --namespace=sales-system
+
+kind-status-service:
+	kubectl get pods -o wide --namespace=sales-system
 
 kind-logs:
-	kubectl logs -lapp=sales-api --all-containers=true -f
+	kubectl logs -lapp=sales-api --all-containers=true -f --tail=10000 --namespace=sales-system
 
-kind-sales-api-update: sales-api
-	kind load docker-image sales-api-amd64:v1.0.0 --name go-sample-service
+kind-restart:
+	kubectl rollout restart deployment sales-api --namespace=sales-system
+
+kind-sales-api-update: sales-api # kind-load kind-restart   
+	kind load docker-image sales-api-amd64:v1.0.0 --name ${CLUSTER_NAME}
 	kubectl delete pods -lapp=sales-api
 
 
