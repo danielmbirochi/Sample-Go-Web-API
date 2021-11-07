@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/ardanlabs/conf"
-	"github.com/danielmbirochi/go-sample-service/app/sales-api/handlers"
+	"github.com/danielmbirochi/go-sample-service/app/services/sales-api/handlers"
 	"github.com/danielmbirochi/go-sample-service/business/auth"
 	"github.com/danielmbirochi/go-sample-service/foundation/database"
 	"github.com/golang-jwt/jwt/v4"

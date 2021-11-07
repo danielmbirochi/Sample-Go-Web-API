@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/danielmbirochi/go-sample-service/app/sales-api/handlers"
+	"github.com/danielmbirochi/go-sample-service/app/services/sales-api/handlers"
 	"github.com/danielmbirochi/go-sample-service/business/auth"
 	"github.com/danielmbirochi/go-sample-service/business/core/user"
 	"github.com/danielmbirochi/go-sample-service/business/tests"

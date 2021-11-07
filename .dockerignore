@@ -1,6 +1,6 @@
-ops/
 .dockerignore
 .gitgnore
 LICENSE
 Makefile
 README.md
+ops/

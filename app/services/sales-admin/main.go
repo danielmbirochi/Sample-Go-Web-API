@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/ardanlabs/conf"
-	"github.com/danielmbirochi/go-sample-service/app/sales-admin/commands"
+	"github.com/danielmbirochi/go-sample-service/app/services/sales-admin/commands"
 	"github.com/danielmbirochi/go-sample-service/foundation/database"
 	"github.com/pkg/errors"
 )
