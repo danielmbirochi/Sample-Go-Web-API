@@ -21,7 +21,7 @@ spec:
       hostNetwork: true
       containers:
       - name: sales-api
-        image: sales-api-amd64:v1.0.0
+        image: sales-api-image # alias to be overwritten by kustomize
         env:
         - name: SALES_DB_HOST
           valueFrom:
