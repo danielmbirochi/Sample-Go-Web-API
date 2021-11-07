@@ -1,0 +1,8 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+resources:
+  - ./sales-pod/kind-sales-config.yaml
+  - ../base/sales-pod
+  - ./database-pod/postgres.yaml
+patchesStrategicMerge:
+- ./sales-pod/kind-sales-patch.yaml

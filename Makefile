@@ -24,56 +24,11 @@ run-help:
 	go run app/services/sales-api/main.go -h
 
 # ==============================================================================
-# Building containers
+# Modules support
 
-all: sales-api
-
-sales-api:
-	docker build \
-		-f ops/docker/dockerfile.sales-api \
-		-t sales-api-amd64:v1.0.0 \
-		--build-arg PACKAGE_NAME=sales-api \
-		--build-arg VCS_REF=`git rev-parse HEAD` \
-		--build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` \
-		.
-
-# ==============================================================================
-# Running from within k8s/dev
-
-kind-up:
-	kind create cluster --image kindest/node:v1.22.1 --name ${CLUSTER_NAME} --config ops/k8s/dev/kind-config.yaml
-# Runs the command below to set a default namespace
-# kubectl config set-context --current --namespace=sales-system
-
-kind-down:
-	kind delete cluster --name ${CLUSTER_NAME}
-
-kind-load:
-	kind load docker-image sales-api-amd64:v1.0.0 --name ${CLUSTER_NAME}
-
-kind-apply:
-	kustomize build ops/k8s/dev | kubectl apply -f -
-
-kind-status:
-	kubectl get nodes -o wide
-	kubectl get svc -o wide
-
-kind-status-full:
-	kubectl describe pod -l app=sales --namespace=sales-system
-
-kind-status-service:
-	kubectl get pods -o wide --namespace=sales-system
-
-kind-logs:
-	kubectl logs -l app=sales --all-containers=true -f --tail=10000 --namespace=sales-system
-
-kind-restart:
-	kubectl rollout restart deployment sales-api --namespace=sales-system
-
-kind-sales-api-update: sales-api # kind-load kind-restart   
-	kind load docker-image sales-api-amd64:v1.0.0 --name ${CLUSTER_NAME}
-	kubectl delete pods -lapp=sales --namespace=sales-system
-
+tidy:
+	go mod tidy
+	go mod vendor
 
 # ==============================================================================
 # Running locally
@@ -118,9 +73,55 @@ test-coverage-detail:
 test-crud:
 	cd app/services/sales-api/tests && go test -run TestUsers/crud -v 
 
-# ==============================================================================
-# Modules support
 
-tidy:
-	go mod tidy
-	go mod vendor
+# ==============================================================================
+# Building containers
+
+all: sales-api
+
+sales-api:
+	docker build \
+		-f ops/docker/dockerfile.sales-api \
+		-t sales-api-amd64:v1.0.0 \
+		--build-arg PACKAGE_NAME=sales-api \
+		--build-arg VCS_REF=`git rev-parse HEAD` \
+		--build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` \
+		.
+
+# ==============================================================================
+# Running from within k8s/kind
+
+kind-up:
+	kind create cluster --image kindest/node:v1.22.1 --name ${CLUSTER_NAME} --config ops/k8s/kind/kind-config.yaml
+# Runs the command below to set a default namespace
+# kubectl config set-context --current --namespace=sales-system
+
+kind-down:
+	kind delete cluster --name ${CLUSTER_NAME}
+
+kind-load:
+	kind load docker-image sales-api-amd64:v1.0.0 --name ${CLUSTER_NAME}
+
+kind-apply:
+	kustomize build ops/k8s/kind | kubectl apply -f -
+
+kind-status:
+	kubectl get nodes -o wide
+	kubectl get svc -o wide
+
+kind-status-full:
+	kubectl describe pod -l app=sales --namespace=sales-system
+
+kind-status-service:
+	kubectl get pods -o wide --namespace=sales-system
+
+kind-logs:
+	kubectl logs -l app=sales --all-containers=true -f --tail=10000 --namespace=sales-system
+
+kind-restart:
+	kubectl rollout restart deployment sales-api --namespace=sales-system
+
+kind-sales-api-update: sales-api # kind-load kind-restart   
+	kind load docker-image sales-api-amd64:v1.0.0 --name ${CLUSTER_NAME}
+	kubectl delete pods -lapp=sales --namespace=sales-system
+

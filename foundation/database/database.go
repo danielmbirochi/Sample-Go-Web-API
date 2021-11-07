@@ -47,7 +47,7 @@ func Open(cfg Config) (*sqlx.DB, error) {
 		Path:     cfg.Name,
 		RawQuery: q.Encode(),
 	}
-	fmt.Println("DB_URI", u.String())
+	// fmt.Println("DB_URI", u.String())
 
 	return sqlx.Open("postgres", u.String())
 }
