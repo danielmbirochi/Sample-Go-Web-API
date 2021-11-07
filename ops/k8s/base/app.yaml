@@ -1,5 +1,5 @@
-apiVersion: v1
 kind: Namespace
+apiVersion: v1
 metadata:
   name: sales-system
 ---
@@ -20,12 +20,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
       containers:
-      - name: zipkin
-        image: openzipkin/zipkin:2.21
-        ports:
-        - name: zipkin
-          containerPort: 9411
-      - name: app
+      - name: sales-api
         image: sales-api-amd64:v1.0.0
         env:
         - name: SALES_DB_HOST
@@ -44,9 +39,9 @@ spec:
               name: sales-api
               key: zipkin_reporter_uri
         ports:
-        - name: app
+        - name: sales-api
           containerPort: 3000
-        - name: app-debug
+        - name: sales-api-debug
           containerPort: 4000
         readinessProbe:
           httpGet:
@@ -54,7 +49,11 @@ spec:
             port: 3000
           initialDelaySeconds: 30
           periodSeconds: 15
-          
+      - name: zipkin
+        image: openzipkin/zipkin:2.21
+        ports:
+        - name: zipkin
+          containerPort: 9411    
 ---
 kind: Service
 apiVersion: v1

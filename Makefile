@@ -59,20 +59,20 @@ kind-status:
 	kubectl get svc -o wide
 
 kind-status-full:
-	kubectl describe pod -lapp=sales-api --namespace=sales-system
+	kubectl describe pod -l app=sales --namespace=sales-system
 
 kind-status-service:
 	kubectl get pods -o wide --namespace=sales-system
 
 kind-logs:
-	kubectl logs -lapp=sales-api --all-containers=true -f --tail=10000 --namespace=sales-system
+	kubectl logs -l app=sales --all-containers=true -f --tail=10000 --namespace=sales-system
 
 kind-restart:
 	kubectl rollout restart deployment sales-api --namespace=sales-system
 
 kind-sales-api-update: sales-api # kind-load kind-restart   
 	kind load docker-image sales-api-amd64:v1.0.0 --name ${CLUSTER_NAME}
-	kubectl delete pods -lapp=sales-api
+	kubectl delete pods -lapp=sales --namespace=sales-system
 
 
 # ==============================================================================
