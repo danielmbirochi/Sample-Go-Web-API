@@ -11,6 +11,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.uber.org/automaxprocs/maxprocs"
 )
 
 var build = "develop"
@@ -40,6 +42,16 @@ func main() {
 }
 
 func run(log *log.Logger) error {
+
+	// =========================================================================
+	// GOMAXPROCS
+
+	// Set the correct number of threads for the service
+	// based on what is available either by the machine or cluster quotas.
+	if _, err := maxprocs.Set(); err != nil {
+		return fmt.Errorf("maxprocs: %w", err)
+	}
+	log.Println("main: Startup: ", "GOMAXPROCS", runtime.GOMAXPROCS(0))
 
 	// ============================================================================================
 	// Setup Configutarion
