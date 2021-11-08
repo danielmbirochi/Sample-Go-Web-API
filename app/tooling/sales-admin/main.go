@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/ardanlabs/conf"
-	"github.com/danielmbirochi/go-sample-service/app/services/sales-admin/commands"
+	"github.com/danielmbirochi/go-sample-service/app/tooling/sales-admin/commands"
 	"github.com/danielmbirochi/go-sample-service/foundation/database"
 	"github.com/pkg/errors"
 )
@@ -33,7 +33,7 @@ func run() error {
 		Args conf.Args
 		DB   struct {
 			User       string `conf:"default:testuser"`
-			Password   string `conf:"default:mysecretpassword,noprint"`
+			Password   string `conf:"default:mysecretpassword,mask"`
 			Hostname   string `conf:"default:0.0.0.0"`
 			Name       string `conf:"default:testdb"`
 			DisableTLS bool   `conf:"default:false"`
@@ -51,6 +51,11 @@ func run() error {
 				return errors.Wrap(err, "generating config usage")
 			}
 			fmt.Println(usage)
+			fmt.Println("\n\n========================== SUPPORTED FLAGS ==========================")
+			fmt.Println("\n-keygen: generate a set of private/public key files")
+			fmt.Println("\n-tokengen: generate a JWT for a user with claims")
+			fmt.Println("\n-migrate: create the schema in the database")
+			fmt.Println("\n-seed: add data to the database")
 			return nil
 		case conf.ErrVersionWanted:
 			version, err := conf.VersionString(prefix, &cfg)
