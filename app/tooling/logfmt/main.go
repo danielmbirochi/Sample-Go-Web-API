@@ -36,6 +36,11 @@ func main() {
 			continue
 		}
 
+		// If a service filter was provided, just format the logs that matches the service.
+		if service != "" && m["service"] != service {
+			continue
+		}
+
 		// Set default tractId
 		traceID := "00000000-0000-0000-0000-000000000000"
 		if v, ok := m["traceid"]; ok {
