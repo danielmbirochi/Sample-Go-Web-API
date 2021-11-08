@@ -78,7 +78,7 @@ func run(log *zap.SugaredLogger) error {
 		}
 		DB struct {
 			User       string `conf:"default:testuser"`
-			Password   string `conf:"default:mysecretpassword,noprint"`
+			Password   string `conf:"default:mysecretpassword,mask"`
 			Hostname   string `conf:"default:0.0.0.0"`
 			Name       string `conf:"default:testdb"`
 			DisableTLS bool   `conf:"default:false"`
