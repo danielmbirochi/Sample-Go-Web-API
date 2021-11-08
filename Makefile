@@ -20,7 +20,7 @@ CLUSTER_NAME := go-sample-service
 admin-help:
 	go run app/tooling/sales-admin/main.go -h
 
-run-help:
+help:
 	go run app/services/sales-api/main.go -h
 
 # ==============================================================================
