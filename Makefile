@@ -18,7 +18,7 @@ CLUSTER_NAME := go-sample-service
 # CLI Help
 
 admin-help:
-	go run app/services/sales-admin/main.go -h
+	go run app/tooling/sales-admin/main.go -h
 
 run-help:
 	go run app/services/sales-api/main.go -h
@@ -37,7 +37,7 @@ run:
 	go run app/services/sales-api/main.go
 
 run-admin:
-	go run app/services/sales-admin/main.go 
+	go run app/tooling/sales-admin/main.go 
 
 build:
 	go build -o app/services/sales-api/sales-api app/services/sales-api/main.go
@@ -46,16 +46,16 @@ build:
 # Administration
 
 generate-keys:
-	go run app/services/sales-admin/main.go keygen
+	go run app/tooling/sales-admin/main.go keygen
 
 generate-token:
-	go run app/services/sales-admin/main.go tokengen ${EMAIL}
+	go run app/tooling/sales-admin/main.go tokengen ${EMAIL}
 
 db-migrations:
-	go run app/services/sales-admin/main.go migrate
+	go run app/tooling/sales-admin/main.go migrate
 
 seed-db:
-	go run app/services/sales-admin/main.go seed
+	go run app/tooling/sales-admin/main.go seed
 
 # ==============================================================================
 # Running local tests
@@ -117,7 +117,11 @@ kind-status-service:
 	kubectl get pods -o wide --namespace=sales-system
 
 kind-logs:
-	kubectl logs -l app=sales --all-containers=true -f --tail=10000 --namespace=sales-system
+	kubectl logs -l app=sales --all-containers=true -f --tail=10000 --namespace=sales-system | go run app/tooling/logfmt/main.go
+
+kind-logs-sales:
+	kubectl logs -l app=sales --all-containers=true -f --tail=10000 --namespace=sales-system | go run app/tooling/logfmt/main.go -service=SALES-API
+
 
 kind-restart:
 	kubectl rollout restart deployment sales-api --namespace=sales-system
