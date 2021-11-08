@@ -6,7 +6,6 @@ import (
 	"expvar"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -19,6 +18,7 @@ import (
 	"github.com/danielmbirochi/go-sample-service/app/services/sales-api/handlers"
 	"github.com/danielmbirochi/go-sample-service/business/auth"
 	"github.com/danielmbirochi/go-sample-service/foundation/database"
+	"github.com/danielmbirochi/go-sample-service/foundation/logger"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
@@ -28,20 +28,27 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/automaxprocs/maxprocs"
+	"go.uber.org/zap"
 )
 
 var build = "develop"
 
 func main() {
-	log := log.New(os.Stdout, "SALES: ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+	// log := log.New(os.Stdout, "SALES: ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+	log, err := logger.New("SALES-API")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer log.Sync()
 
 	if err := run(log); err != nil {
-		log.Println("main: error: ", err)
+		log.Errorw("main: error: ", err)
 		os.Exit(1)
 	}
 }
 
-func run(log *log.Logger) error {
+func run(log *zap.SugaredLogger) error {
 
 	// =========================================================================
 	// GOMAXPROCS
@@ -51,7 +58,7 @@ func run(log *log.Logger) error {
 	if _, err := maxprocs.Set(); err != nil {
 		return fmt.Errorf("maxprocs: %w", err)
 	}
-	log.Println("main: Startup: ", "GOMAXPROCS", runtime.GOMAXPROCS(0))
+	log.Infow("startup", "GOMAXPROCS", runtime.GOMAXPROCS(0))
 
 	// ============================================================================================
 	// Setup Configutarion
@@ -84,7 +91,7 @@ func run(log *log.Logger) error {
 	}
 
 	cfg.Version.SVN = build
-	cfg.Version.Desc = "Sample Go service"
+	cfg.Version.Desc = "Go Sample service"
 
 	if err := conf.Parse(os.Args[1:], "SALES", &cfg); err != nil {
 		switch err {
@@ -116,18 +123,18 @@ func run(log *log.Logger) error {
 	// App Starting
 
 	expvar.NewString("build").Set(build)
-	log.Printf("main: Started: Application initializing: version %q", build)
-	defer log.Println("main: Completed")
+	log.Infow("starting service", "version", build)
+	defer log.Infow("shutdown complete")
 
 	configOut, err := conf.String(&cfg)
 	if err != nil {
 		return errors.Wrap(err, "generating config for output")
 	}
-	log.Printf("main: Config: \n%v\n", configOut)
+	log.Infow("startup", "config", configOut)
 
 	// ============================================================================================
 	// Initialize authentication support
-	log.Println("main : Started : Initializing authentication support")
+	log.Infow("startup", "status", "initializing authentication support")
 
 	privatePEM, err := ioutil.ReadFile(cfg.Auth.PrivateKeyFile)
 	if err != nil {
@@ -157,7 +164,7 @@ func run(log *log.Logger) error {
 	// =========================================================================
 	// Start Database
 
-	log.Println("main: Initializing database support")
+	log.Infow("startup", "status", "initializing database support", "host", cfg.DB.Hostname)
 
 	cfg.DB.DisableTLS = true
 
@@ -172,7 +179,7 @@ func run(log *log.Logger) error {
 		return errors.Wrap(err, "connecting to db")
 	}
 	defer func() {
-		log.Printf("main: Database Stopping : %s", cfg.DB.Hostname)
+		log.Infow("shutdown", "status", "stopping database support", "host", cfg.DB.Hostname)
 		db.Close()
 	}()
 
@@ -183,11 +190,11 @@ func run(log *log.Logger) error {
 	// compatible with your project. Please review the documentation for
 	// opentelemetry.
 
-	log.Println("startup", "status", "initializing OT/Zipkin tracing support")
+	log.Infow("startup", "status", "initializing OT/Zipkin tracing support")
 
 	exporter, err := zipkin.New(
 		cfg.Zipkin.ReporterURI,
-		zipkin.WithLogger(log),
+		zipkin.WithLogger(zap.NewStdLog(log.Desugar())),
 	)
 	if err != nil {
 		return errors.Wrap(err, "creating new zipkin exporter")
@@ -219,17 +226,16 @@ func run(log *log.Logger) error {
 	// /debug/vars - Added to the default mux by importing the expvar package.
 	//
 	// Not concerned with shutting this down when the application is shutdown.
-	log.Println("main: Initializing debugging support")
 	go func() {
-		log.Printf("main: Debug Listening %s", cfg.Web.DebugHost)
+		log.Infow("startup", "status", "debug router started", "host", cfg.Web.DebugHost)
 		if err := http.ListenAndServe(cfg.Web.DebugHost, http.DefaultServeMux); err != nil {
-			log.Printf("main: Debug Listener closed : %v", err)
+			log.Errorw("shutdown", "status", "debug router closed", "host", cfg.Web.DebugHost, "ERROR", err)
 		}
 	}()
 
 	// ============================================================================================
 	// Start API Service
-	log.Println("main: Initializing API support")
+	log.Infow("startup", "status", "initializing API support")
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
@@ -246,7 +252,7 @@ func run(log *log.Logger) error {
 	serverErrors := make(chan error, 1)
 
 	go func() {
-		log.Printf("main: API listening on %s", api.Addr)
+		log.Infow("startup", "status", "api router started", "host", api.Addr)
 		serverErrors <- api.ListenAndServe()
 	}()
 
@@ -259,7 +265,8 @@ func run(log *log.Logger) error {
 		return errors.Wrap(err, "server error")
 
 	case sig := <-shutdown:
-		log.Printf("main: %v : Starting shutdown", sig)
+		log.Infow("shutdown", "status", "shutdown started", "signal", sig)
+		defer log.Infow("shutdown", "status", "shutdown complete", "signal", sig)
 
 		// Give outstanding requests a deadline for completion.
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.ShutdownTimeout)

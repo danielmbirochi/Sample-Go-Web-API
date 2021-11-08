@@ -4,7 +4,6 @@ package user
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
 
 	"github.com/danielmbirochi/go-sample-service/business/auth"
@@ -14,6 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,11 +34,11 @@ var (
 
 type UserService struct {
 	db  *sqlx.DB
-	log *log.Logger
+	log *zap.SugaredLogger
 }
 
 // New is a factory method for constructing user service.
-func New(log *log.Logger, sqlxDB *sqlx.DB) UserService {
+func New(log *zap.SugaredLogger, sqlxDB *sqlx.DB) UserService {
 	return UserService{
 		db:  sqlxDB,
 		log: log,
@@ -71,7 +71,7 @@ func (us UserService) Create(ctx context.Context, traceID string, nu NewUser, no
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
-	us.log.Printf("%s : %s : query : %s", traceID, "user.Create",
+	us.log.Infof("%s : %s : query : %s", traceID, "user.Create",
 		database.Log(q, usr.ID, usr.Name, usr.Email, usr.PasswordHash, usr.Roles, usr.DateCreated, usr.DateUpdated),
 	)
 
@@ -121,7 +121,7 @@ func (us UserService) Update(ctx context.Context, traceID string, claims auth.Cl
 		WHERE user_id = $1
 	`
 
-	us.log.Printf("%s : %s : query : %s", traceID, "user.Update",
+	us.log.Infof("%s : %s : query : %s", traceID, "user.Update",
 		database.Log(q, usr.ID, usr.Name, usr.Email, usr.Roles, usr.PasswordHash, usr.DateCreated, usr.DateUpdated),
 	)
 
@@ -147,7 +147,7 @@ func (us UserService) Delete(ctx context.Context, traceID string, id string) err
 			WHERE user_id = $1
 	`
 
-	us.log.Printf("%s : %s : query : %s", traceID, "user.Delete",
+	us.log.Infof("%s : %s : query : %s", traceID, "user.Delete",
 		database.Log(q, id),
 	)
 
@@ -179,7 +179,7 @@ func (us UserService) List(ctx context.Context, traceID string, pageNumber int, 
 	OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY
 	`
 
-	us.log.Printf("%s : %s : query : %s", traceID, "user.List",
+	us.log.Infof("%s : %s : query : %s", traceID, "user.List",
 		database.Log(q, data),
 	)
 
@@ -214,7 +214,7 @@ func (us UserService) GetById(ctx context.Context, traceID string, claims auth.C
 			WHERE user_id = $1
 	`
 
-	us.log.Printf("%s : %s : query : %s", traceID, "user.GetById",
+	us.log.Infof("%s : %s : query : %s", traceID, "user.GetById",
 		database.Log(q, userID),
 	)
 
@@ -240,7 +240,7 @@ func (us UserService) GetByEmail(ctx context.Context, traceID string, claims aut
 			WHERE email = $1
 	`
 
-	us.log.Printf("%s : %s : query : %s", traceID, "user.GetByEmail",
+	us.log.Infof("%s : %s : query : %s", traceID, "user.GetByEmail",
 		database.Log(q, email),
 	)
 
@@ -273,7 +273,7 @@ func (us UserService) Authenticate(ctx context.Context, traceID string, now time
 			WHERE email = $1
 	`
 
-	us.log.Printf("%s: %s: %s", traceID, "user.Authenticate",
+	us.log.Infof("%s: %s: %s", traceID, "user.Authenticate",
 		database.Log(q, email),
 	)
 

@@ -6,8 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
-	"log"
-	"os"
 	"testing"
 	"time"
 
@@ -16,9 +14,11 @@ import (
 	"github.com/danielmbirochi/go-sample-service/business/data/schema"
 	"github.com/danielmbirochi/go-sample-service/foundation/database"
 	"github.com/danielmbirochi/go-sample-service/foundation/docker"
+	"github.com/danielmbirochi/go-sample-service/foundation/logger"
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 // Success and failure markers.
@@ -38,7 +38,7 @@ var (
 
 // NewUnit creates a test database. It sets the proper db migrations.
 // It returns the logger, the database and a teardown function.
-func NewUnit(t *testing.T) (*log.Logger, *sqlx.DB, func()) {
+func NewUnit(t *testing.T) (*zap.SugaredLogger, *sqlx.DB, func()) {
 	c := docker.StartContainer(t, dbImage, dbPort, dbArgs...)
 
 	cfg := database.Config{
@@ -86,7 +86,10 @@ func NewUnit(t *testing.T) (*log.Logger, *sqlx.DB, func()) {
 		docker.StopContainer(t, c.ID)
 	}
 
-	log := log.New(os.Stdout, "\nTEST : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+	log, err := logger.New("TEST")
+	if err != nil {
+		t.Fatalf("logger error: %s", err)
+	}
 
 	return log, db, teardown
 }
@@ -115,7 +118,7 @@ func IntPointer(i int) *int {
 type Test struct {
 	TraceID  string
 	DB       *sqlx.DB
-	Log      *log.Logger
+	Log      *zap.SugaredLogger
 	Auth     *auth.Auth
 	KID      string
 	Teardown func()

@@ -2,7 +2,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"os"
 
@@ -11,10 +10,11 @@ import (
 	middleware "github.com/danielmbirochi/go-sample-service/business/middlewares"
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 // API construct an http.Handler with all application routes defined.
-func API(build string, shutdown chan os.Signal, log *log.Logger, a *auth.Auth, db *sqlx.DB) *web.App {
+func API(build string, shutdown chan os.Signal, log *zap.SugaredLogger, a *auth.Auth, db *sqlx.DB) *web.App {
 	app := web.NewApp(shutdown, middleware.Logger(log), middleware.Errors(log), middleware.Metrics(), middleware.Panics(log))
 
 	// Register the healthcheck endpoint

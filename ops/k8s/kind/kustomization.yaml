@@ -7,7 +7,6 @@ resources:
 patchesStrategicMerge:
 - ./sales-pod/kind-sales-patch.yaml
 images:
-- name: sales-api-image # tells kustomize to search for this image name in spec.template.spec.cotainers and overwrite it 
-  newName: sales-api-amd64 
-  newTag: "v1.0.0" # default tag, it would be overwritten by kustomize edit command 
-
+- name: sales-api-image
+  newName: sales-api-amd64
+  newTag: v1.1.0

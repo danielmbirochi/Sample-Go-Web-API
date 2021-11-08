@@ -2,17 +2,17 @@ package middleware
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
 
 // Errors handles errors coming out of the call chain (propagated by the innerHandler). It detects normal
 // application errors which are used to respond to the client in a uniform way (trusted errors).
 // Unexpected errors (status >= 500) are logged (untrusted errors).
-func Errors(log *log.Logger) web.Middleware {
+func Errors(log *zap.SugaredLogger) web.Middleware {
 
 	m := func(innerHandler web.Handler) web.Handler {
 
@@ -31,7 +31,7 @@ func Errors(log *log.Logger) web.Middleware {
 			// Run the handler chain and catch any propagated error.
 			if err := innerHandler(ctx, w, r); err != nil {
 
-				log.Printf("%s : ERROR     : %v", v.TraceID, err)
+				log.Infof("%s : ERROR     : %v", v.TraceID, err)
 
 				// Send the error back to the client. If this call throws any error, it`s going to
 				// return the untrusted error up to the chain (i.e. network errors)

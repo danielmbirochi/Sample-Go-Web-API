@@ -2,16 +2,16 @@ package middleware
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
 
 // Logger writes some information about the request to the logs in the
-func Logger(log *log.Logger) web.Middleware {
+func Logger(log *zap.SugaredLogger) web.Middleware {
 
 	// This is the actual middleware function to be executed.
 	m := func(innerHandler web.Handler) web.Handler {
@@ -28,7 +28,7 @@ func Logger(log *log.Logger) web.Middleware {
 				return web.NewShutdownError("web value missing from context")
 			}
 
-			log.Printf("%s : started   : %s %s -> %s",
+			log.Infof("%s : started   : %s %s -> %s",
 				v.TraceID,
 				r.Method, r.URL.Path,
 				r.RemoteAddr,
@@ -37,7 +37,7 @@ func Logger(log *log.Logger) web.Middleware {
 			err := innerHandler(ctx, w, r)
 
 			// format: TraceID : (200) GET /foo -> IP ADDR (latency)
-			log.Printf("%s : completed : (%d) : %s %s -> %s (%s)",
+			log.Infof("%s : completed : (%d) : %s %s -> %s (%s)",
 				v.TraceID, v.StatusCode,
 				r.Method, r.URL.Path,
 				r.RemoteAddr, time.Since(v.Now),

@@ -2,18 +2,18 @@ package middleware
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/danielmbirochi/go-sample-service/foundation/web"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
 
 // Panics recovers from panics propagated by the innerHandler and converts the panic
 // to an error so it is handled in Errors middleware (outer middleware).
-func Panics(log *log.Logger) web.Middleware {
+func Panics(log *zap.SugaredLogger) web.Middleware {
 
 	m := func(innerHandler web.Handler) web.Handler {
 
@@ -34,7 +34,7 @@ func Panics(log *log.Logger) web.Middleware {
 					err = errors.Errorf("panic: %v", r)
 
 					// Log the Go stack trace for this panic'd goroutine.
-					log.Printf("%s :\n%s", v.TraceID, debug.Stack())
+					log.Infof("%s :\n%s", v.TraceID, debug.Stack())
 				}
 			}()
 
