@@ -11,7 +11,7 @@ CLUSTER_NAME := go-sample-service
 #
 # hey -m GET -c 100 -n 10000 -H "Authorization: Bearer ${TOKEN}" http://localhost:3000/v1/users/1/2
 # zipkin: http://localhost:9411
-# expvarmon -ports 4000 -vars build,requests,goroutines,errors,mem:memstats.Alloc
+# expvarmon -ports 4000 -vars build,requests,goroutines,errors,panics,mem:memstats.Alloc
 #
 
 # ==============================================================================
@@ -84,7 +84,7 @@ sales-api:
 		-f ops/docker/dockerfile.sales-api \
 		-t sales-api-amd64:${VERSION} \
 		--build-arg PACKAGE_NAME=sales-api \
-		--build-arg VCS_REF=`git rev-parse HEAD` \
+		--build-arg BUILD_REF=$(VERSION) \
 		--build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` \
 		.
 
