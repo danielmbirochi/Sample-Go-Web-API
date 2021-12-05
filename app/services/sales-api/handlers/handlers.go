@@ -2,7 +2,9 @@
 package handlers
 
 import (
+	"expvar"
 	"net/http"
+	"net/http/pprof"
 	"os"
 
 	"github.com/danielmbirochi/go-sample-service/business/auth"
@@ -37,4 +39,20 @@ func API(build string, shutdown chan os.Signal, log *zap.SugaredLogger, a *auth.
 	app.Handle(http.MethodDelete, "/v1/users/:id", uh.delete, middleware.Authenticate(a), middleware.Authorize(auth.RoleAdmin))
 
 	return app
+}
+
+// DebugStandardLibraryMux registers all the debug routes from the std library
+// into a new mux. This is done to avoid the usage of DefaultServerMux, since a
+// dependency could injects a handler into it.
+func DebugStandardLibraryMux() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	mux.Handle("/debug/vars", expvar.Handler())
+
+	return mux
 }

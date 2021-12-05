@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
@@ -221,14 +220,19 @@ func run(log *zap.SugaredLogger) error {
 
 	// ============================================================================================
 	// Start Debug Service
-	//
+	log.Infow("startup", "status", "debug router started", "host", cfg.Web.DebugHost)
+
+	// The DebugStandardLibraryMux func returns a mux to listen and serve on for all
+	// the debug related endpoints. It includes the standard library endpoints, such as:
 	// /debug/pprof - Added to the default mux by importing the net/http/pprof package.
 	// /debug/vars - Added to the default mux by importing the expvar package.
 	//
+	// Construct the mux for debug calls.
+	debugMux := handlers.DebugStandardLibraryMux()
+
 	// Not concerned with shutting this down when the application is shutdown.
 	go func() {
-		log.Infow("startup", "status", "debug router started", "host", cfg.Web.DebugHost)
-		if err := http.ListenAndServe(cfg.Web.DebugHost, http.DefaultServeMux); err != nil {
+		if err := http.ListenAndServe(cfg.Web.DebugHost, debugMux); err != nil {
 			log.Errorw("shutdown", "status", "debug router closed", "host", cfg.Web.DebugHost, "ERROR", err)
 		}
 	}()
