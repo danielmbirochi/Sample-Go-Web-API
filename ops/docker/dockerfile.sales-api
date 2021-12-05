@@ -1,8 +1,9 @@
 FROM golang:alpine AS build-env
 
 ENV CGO_ENABLED 0
-ARG VCS_REF
+ARG BUILD_REF
 ARG PACKAGE_NAME
+ARG BUILD_DATE
 
 RUN mkdir -p /service
 
@@ -15,22 +16,22 @@ RUN mkdir -p /service
 COPY . /service
 
 # Build the admin CLI tool.
-WORKDIR /service/app/services/sales-admin
-RUN go build -ldflags "-X main.build=${VCS_REF}"
+WORKDIR /service/app/tooling/sales-admin
+RUN go build -ldflags "-X main.build=${BUILD_REF}"
 
 # Build the sales-api service binary.
 WORKDIR /service/app/services/${PACKAGE_NAME}
-RUN go build -ldflags "-X main.build=${VCS_REF}"
+RUN go build -ldflags "-X main.build=${BUILD_REF}-${BUILD_DATE}"
 
 
 FROM scratch
 
 ARG BUILD_DATE
-ARG VCS_REF
+ARG BUILD_REF
 ARG PACKAGE_NAME
 
 COPY --from=build-env /service/private.pem /app/private.pem
-COPY --from=build-env /service/app/services/sales-admin/sales-admin /service/sales-admin
+COPY --from=build-env /service/app/tooling/sales-admin/sales-admin /service/sales-admin
 COPY --from=build-env /service/app/services/${PACKAGE_NAME}/${PACKAGE_NAME} /service/sales-api
 
 WORKDIR /service
