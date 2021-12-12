@@ -249,6 +249,7 @@ func run(log *zap.SugaredLogger) error {
 		Handler:      handlers.API(build, shutdown, log, auth, db),
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
+		ErrorLog:     zap.NewStdLog(log.Desugar()),
 	}
 
 	// Make a channel for listening errors coming from the API Http listener. Use a
