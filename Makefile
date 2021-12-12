@@ -114,7 +114,7 @@ kind-status-full:
 	kubectl describe pod -l app=sales --namespace=sales-system
 
 kind-status-service:
-	kubectl get pods -o wide --namespace=sales-system
+	kubectl get pods -o wide --watch --namespace=sales-system
 
 kind-logs:
 	kubectl logs -l app=sales --all-containers=true -f --tail=10000 --namespace=sales-system | go run app/tooling/logfmt/main.go
